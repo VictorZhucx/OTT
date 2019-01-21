@@ -1,0 +1,7 @@
+config AML_GMD_13002
+	boolean "Amlogic GMD_13002 drivers"
+	select  I2C
+	default n
+	---help---
+		say yes if you want add Amlogic GMD support
+
