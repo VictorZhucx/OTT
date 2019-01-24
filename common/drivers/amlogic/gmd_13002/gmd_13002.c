@@ -331,7 +331,7 @@ static ssize_t gmd13002_send_show(struct device *dev, struct device_attribute *a
 }
 
 
-static DEVICE_ATTR(gmd_13002, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,gmd13002_send_show, gmd13002_send_store);
+static DEVICE_ATTR(gmd_13002, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH|S_IROTH,gmd13002_send_show, gmd13002_send_store);
 
 static struct attribute *gmd_attributes[] = {
 	&dev_attr_gmd_13002.attr,
