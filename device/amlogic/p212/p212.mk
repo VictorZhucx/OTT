@@ -337,3 +337,4 @@ PRODUCT_PACKAGES += \
     brillo_update_payload
 endif
 PRODUCT_PACKAGES += opscreen
+PRODUCT_PACKAGES += detectkey
