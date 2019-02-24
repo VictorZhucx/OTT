@@ -49,8 +49,8 @@ int getInputInfo(char *buf, int count, displayInfo* dInfo) {
 				printf("The third char should be y.\n");
 				return -1;
 			}
-		} else if (tmpCount == 19) {
-			printf("The length of input should less than 19.\n");
+		} else if (tmpCount == 24) {
+			printf("The length of input should less than 24.\n");
 			return -1;
 		} 
 	}

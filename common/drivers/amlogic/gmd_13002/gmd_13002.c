@@ -244,11 +244,12 @@ void gmd13002_display_string(uint8_t chXpos, uint8_t chYpos, const uint8_t *pchS
     while (*pchString != '\0') {       
         if (chXpos > (GMD13002_WIDTH - chSize / 2)) {
 			chXpos = 0;
-			chYpos += chSize;
-			if (chYpos > (GMD13002_HEIGHT - chSize)) {
-				chYpos = chXpos = 0;
-				gmd13002_clear_screen(0x00);
-			}
+			//chYpos += chSize;
+			//if (chYpos > (GMD13002_HEIGHT - chSize)) {
+				//chYpos = chXpos = 0;
+				//gmd13002_clear_screen(0x00);
+			//}
+			break;
 		}
 		
         gmd13002_display_char(chXpos, chYpos, *pchString, chSize, chMode);
