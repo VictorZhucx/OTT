@@ -34,7 +34,7 @@
 #define GMD13002_CMD    0
 #define GMD13002_DAT    1
 
-#define GMD13002_WIDTH    128
+#define GMD13002_WIDTH    132 
 #define GMD13002_HEIGHT   64
 
 #define __SET_COL_START_ADDR() 	do { \
@@ -42,7 +42,7 @@
 									gmd13002_write(0x10, GMD13002_CMD); \
 								} while(false)
 
-static uint8_t s_chDispalyBuffer[128][8];
+static uint8_t s_chDispalyBuffer[132][8];
 
 struct i2c_client *g_aml_gmd13002_client = NULL;
 struct aml_gmd13002_data *gmd = NULL;
@@ -158,7 +158,7 @@ void gmd13002_refresh_gram(void)
 	for (i = 0; i < 8; i ++) {  
 		gmd13002_write(0xB0 + i, GMD13002_CMD);    
 		__SET_COL_START_ADDR();      
-		for (j = 0; j < 128; j ++) {
+		for (j = 0; j < 132; j ++) {
 			gmd13002_write(s_chDispalyBuffer[j][i], GMD13002_DAT); 
 		}
 	}   
@@ -172,7 +172,7 @@ void gmd13002_clear_screen(uint8_t chFill)
 	for (i = 0; i < 8; i ++) {
 		gmd13002_write(0xB0 + i, GMD13002_CMD);
 		__SET_COL_START_ADDR();
-		for (j = 0; j < 128; j ++) {
+		for (j = 0; j < 132; j ++) {
 			s_chDispalyBuffer[j][i] = chFill;
 		}
 	}
@@ -184,7 +184,7 @@ void gmd13002_draw_point(uint8_t chXpos, uint8_t chYpos, uint8_t chPoint)
 {
 	uint8_t chPos, chBx, chTemp = 0;
 	
-	if (chXpos > 127 || chYpos > 63) {
+	if (chXpos > 131 || chYpos > 63) {
 		return;
 	}
 	chPos = 7 - chYpos / 8; // 
