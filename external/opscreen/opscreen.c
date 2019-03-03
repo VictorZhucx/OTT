@@ -64,20 +64,25 @@ int main(int argc, char *argv[])
 	displayInfo dInfo;
 	int fd,l,i = 0;
 	if (argc >= 2) {
-        for (; i < argc - 1; i++) {
-        	if (i > 5) {
-        		printf("You should not input exceed 5 args\n");
-        		return -1;
+		if (strncmp(argv[1], "image", 5) != 0) {
+			for (; i < argc - 1; i++) {
+        		if (i > 5) {
+        			printf("You should not input exceed 5 args\n");
+        			return -1;
+        		}
+        		memset(&dInfo, 0, sizeof(dInfo));
+        		if (-1 == getInputInfo(argv[i+1], strlen(argv[i+1]), &dInfo)) {
+        			return -1;
+        		}
+        		strcat(tmpCmdStr, dInfo.xBuf);
+        		strcat(tmpCmdStr, dInfo.yBuf);
+        		strcat(tmpCmdStr, dInfo.strBuf);
+			    strcat(tmpCmdStr, "\r\n");
         	}
-        	memset(&dInfo, 0, sizeof(dInfo));
-        	if (-1 == getInputInfo(argv[i+1], strlen(argv[i+1]), &dInfo)) {
-        		return -1;
-        	}
-        	strcat(tmpCmdStr, dInfo.xBuf);
-        	strcat(tmpCmdStr, dInfo.yBuf);
-        	strcat(tmpCmdStr, dInfo.strBuf);
-		    strcat(tmpCmdStr, "\r\n");
-        }
+		} else {
+			strncpy(tmpCmdStr, argv[1], 5);
+			printf("here %s\n",tmpCmdStr);
+		}
         fd = open("/sys/devices/i2c-2/2-003c/gmd_13002", O_WRONLY);
         if (fd == -1) {
             printf("Error: open() failed.\n");

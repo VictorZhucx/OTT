@@ -199,6 +199,36 @@ void gmd13002_draw_point(uint8_t chXpos, uint8_t chYpos, uint8_t chPoint)
 	}
 }
 
+void gmd13002_display_image(void) {
+	uint8_t chTemp = 0;
+	uint8_t chXpos = 2;
+	uint8_t chYpos = 0;
+	uint8_t chYpos0 = 0;
+	uint8_t num, i, j;
+	uint8_t maxNum = 64;
+
+	for (num = 0; num < maxNum; num++) {
+		for (i = 0; i < 16; i ++) {  
+			chTemp = c_chImageLittle[num][i];
+			chXpos ++;
+			if (chXpos > 129) {
+				chXpos = 2;
+				chYpos0 = chYpos0 + 8;
+			}
+			chYpos = chYpos0;
+	        for (j = 0; j < 8; j ++) {
+				if (chTemp & 0x80) {
+					gmd13002_draw_point(chXpos, chYpos, 1);
+				} else {
+					gmd13002_draw_point(chXpos, chYpos, 0);
+				}
+				chTemp <<= 1;
+				chYpos ++;
+			}
+		}
+	}
+}
+
 void gmd13002_display_char(uint8_t chXpos, uint8_t chYpos, uint8_t chChr, uint8_t chSize, uint8_t chMode)
 {      	
 	uint8_t i, j;
@@ -244,12 +274,12 @@ void gmd13002_display_string(uint8_t chXpos, uint8_t chYpos, const uint8_t *pchS
     while (*pchString != '\0') {       
         if (chXpos > (GMD13002_WIDTH - chSize / 2)) {
 			chXpos = 0;
-			//chYpos += chSize;
-			//if (chYpos > (GMD13002_HEIGHT - chSize)) {
-				//chYpos = chXpos = 0;
-				//gmd13002_clear_screen(0x00);
-			//}
-			break;
+			chYpos += chSize;
+			if (chYpos > (GMD13002_HEIGHT - chSize)) {
+				chYpos = chXpos = 0;
+				gmd13002_clear_screen(0x00);
+			}
+			//break;
 		}
 		
         gmd13002_display_char(chXpos, chYpos, *pchString, chSize, chMode);
@@ -264,6 +294,7 @@ static int aml_gmd13002_i2c_init(void)
 	gmd13002_clear_screen(0xFF);
 	mdelay(1000);
 	gmd13002_clear_screen(0x00);
+	//gmd13002_display_image();
 	return 0;
 }
 
@@ -277,6 +308,14 @@ static ssize_t gmd13002_send_store(struct device *dev,struct device_attribute *a
 	uint8_t X1_buf[2]={0};
 	uint8_t Y1_buf[2]={0};
 	gmd13002_clear_screen(0x00);
+
+	if (strncmp(buf, "image", 5) == 0) {
+		gmd13002_display_image();
+		gmd13002_refresh_gram();	
+		pr_info("display image\n");
+		return count;
+	}
+
 	while( *(buf+2) != '\0' )
 	{
 		while((*(buf+t)!= '\r')||(*(buf+t+1) != '\n'))
