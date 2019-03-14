@@ -148,6 +148,13 @@
 		led_active_low = <1>;
 	};
 
+	chAudio {
+		compatible = "amlogic, chAudio";
+		dev_name = "chAudio";
+		status = "okay";
+		qcom,ch_audio_pin = <&gpio GPIOCLK_0 GPIO_ACTIVE_LOW>;
+	};
+
 	meson-vout {
 		compatible = "amlogic, meson-vout";
 		dev_name = "meson-vout";

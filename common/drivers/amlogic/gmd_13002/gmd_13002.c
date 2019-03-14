@@ -277,9 +277,9 @@ void gmd13002_display_string(uint8_t chXpos, uint8_t chYpos, const uint8_t *pchS
 			chYpos += chSize;
 			if (chYpos > (GMD13002_HEIGHT - chSize)) {
 				chYpos = chXpos = 0;
-				gmd13002_clear_screen(0x00);
+				//gmd13002_clear_screen(0x00);
+				break;
 			}
-			//break;
 		}
 		
         gmd13002_display_char(chXpos, chYpos, *pchString, chSize, chMode);

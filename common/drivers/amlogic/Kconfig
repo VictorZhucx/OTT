@@ -49,6 +49,8 @@ source "drivers/amlogic/led/Kconfig"
 
 source "drivers/amlogic/gmd_13002/Kconfig"
 
+source "drivers/amlogic/ch_aduio/Kconfig"
+
 source "drivers/amlogic/canvas/Kconfig"
 
 source "drivers/amlogic/clk/Kconfig"
