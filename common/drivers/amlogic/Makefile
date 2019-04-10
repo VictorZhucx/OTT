@@ -34,7 +34,7 @@ obj-$(CONFIG_I2C_AML)		+= i2c/
 
 obj-$(CONFIG_AML_GMD_13002)		+= gmd_13002/
 
-obj-$(CONFIG_AML_CH_AUDIO)		+= ch_aduio/
+obj-$(CONFIG_AML_CH_AUDIO)		+= ch_audio/
 
 obj-$(CONFIG_AMLOGIC_PWM)		+= pwm/
 
