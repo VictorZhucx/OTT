@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">GPIO</string>
+    <string name="enable">enable</string>
+    <string name="disable">disable</string>
+</resources>

@@ -338,3 +338,4 @@ PRODUCT_PACKAGES += \
 endif
 PRODUCT_PACKAGES += opscreen
 PRODUCT_PACKAGES += detectkey
+PRODUCT_PACKAGES += Chaudio
