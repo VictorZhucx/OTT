@@ -49,7 +49,7 @@ source "drivers/amlogic/led/Kconfig"
 
 source "drivers/amlogic/gmd_13002/Kconfig"
 
-source "drivers/amlogic/ch_aduio/Kconfig"
+source "drivers/amlogic/ctrl_mic/Kconfig"
 
 source "drivers/amlogic/canvas/Kconfig"
 

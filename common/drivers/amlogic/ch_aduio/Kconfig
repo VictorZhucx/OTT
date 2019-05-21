@@ -1,6 +1,0 @@
-config AML_CH_AUDIO
-	boolean "Amlogic CH_AUDIO drivers"
-	default y
-	---help---
-		say yes if you want add Amlogic change audio support
-

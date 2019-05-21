@@ -1,0 +1,7 @@
+config AML_CTRL_MIC
+	boolean "Amlogic AML_CTRL drivers"
+	select  I2C
+	default y
+	---help---
+		say yes if you want add Amlogic control mic support
+

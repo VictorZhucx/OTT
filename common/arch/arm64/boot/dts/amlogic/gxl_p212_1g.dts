@@ -160,12 +160,6 @@
 		led_active_low = <1>;
 	};
 
-	chAudio {
-		compatible = "amlogic, chAudio";
-		dev_name = "chAudio";
-		status = "okay";
-		qcom,ch_audio_pin = <&gpio GPIOCLK_0 GPIO_ACTIVE_LOW>;
-	};
 
 	meson-vout {
 		compatible = "amlogic, meson-vout";
@@ -984,13 +978,14 @@
 				"Ext Spk","LOUTL",
 				"Ext Spk","LOUTR";
 
-		mute_gpio-gpios = <&gpio GPIOH_5 0>;
+		mute_gpio-gpios = <&gpio GPIOCLK_1 0>;
 		mute_inv;
 		sleep_time = <300>;
 		hp_disable;
 		hp_paraments = <800 300 0 5 1>;
 		pinctrl-names = "aml_snd_m8";
 		pinctrl-0 = <&audio_pins>;
+		aux_dev = "es8374";
 		cpu_list = <&cpudai0 &cpudai1 &cpudai2>;
 		codec_list = <&codec0 &codec1 &codec2>;
 		plat_list = <&i2s_plat &i2s_plat &pcm_plat>;
@@ -1012,6 +1007,16 @@
 		codec2: codec2 {
 			sound-dai = <&pcm_codec>;
 		};
+	    es8374{
+	         #sound-dai-cells = <0>;
+	         compatible = "ambarella,es8374";
+	         codec_name = "es8374";
+	         status = "okay";
+	         i2c_addr = <0x10>;
+	         i2c_bus = "i2c_bus_b";
+	         //reset_pin = <&gpio_ao GPIOAO_9 0>;
+			 input_mux_reg_buf = /bits/ 8 <0x00 0x01 0x77 0x72>;/*AD mode*/                                 
+	     };
 	};
 	/* END OF AUDIO board specific */
 

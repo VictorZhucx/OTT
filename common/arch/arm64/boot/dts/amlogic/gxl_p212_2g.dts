@@ -142,6 +142,18 @@
 
 	};
 
+	/*for external keypad*/
+	adc_keypad{
+		compatible = "amlogic, adc_keypad";
+		status = "okay";
+		key_name = "volume_up","volume_down", "back","call";
+		key_num = <4>;
+		key_code = <115 114 158 61>;
+		key_chan = <0 0 0 0>;
+		key_val = <25 510 681 766>; //val=voltage/1800mV*1023
+		key_tolerance = <25 40 40 25>;
+	};
+
 	sysled {
 		compatible = "amlogic, sysled";
 		dev_name = "sysled";
@@ -657,6 +669,7 @@
 	};
 
 
+
 	unifykey{
 		compatible = "amlogic, unifykey";
 		status = "ok";
@@ -1039,13 +1052,14 @@
 				"Ext Spk","LOUTL",
 				"Ext Spk","LOUTR";
 
-		mute_gpio-gpios = <&gpio GPIOH_5 0>;
+		mute_gpio-gpios = <&gpio GPIOCLK_1 0>;
 		mute_inv;
 		sleep_time = <300>;
 		hp_disable;
 		hp_paraments = <800 300 0 5 1>;
 		pinctrl-names = "aml_snd_m8";
 		pinctrl-0 = <&audio_pins>;
+		aux_dev = "es8374";
 		cpu_list = <&cpudai0 &cpudai1 &cpudai2>;
 		codec_list = <&codec0 &codec1 &codec2>;
 		plat_list = <&i2s_plat &i2s_plat &pcm_plat>;
@@ -1067,6 +1081,16 @@
 		codec2: codec2 {
 			sound-dai = <&pcm_codec>;
 		};
+	    es8374{
+	         #sound-dai-cells = <0>;
+	         compatible = "ambarella,es8374";
+	         codec_name = "es8374";
+	         status = "okay";
+	         i2c_addr = <0x10>;
+	         i2c_bus = "i2c_bus_b";
+	         //reset_pin = <&gpio_ao GPIOAO_9 0>;
+			 input_mux_reg_buf = /bits/ 8 <0x00 0x01 0x77 0x72>;/*AD mode*/                                 
+	     };
 	};
 	/* END OF AUDIO board specific */
 
@@ -1198,6 +1222,7 @@
 		amlogic,clrmask=<5 0x3c33>;
 		amlogic,pins ="GPIOX_8", "GPIOX_9", "GPIOX_10", "GPIOX_11";
 	};
+
 };
 &efuse {
 	status = "okay";

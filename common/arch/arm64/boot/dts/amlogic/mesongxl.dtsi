@@ -700,6 +700,26 @@
 		map = <&custom_maps>;
 		max_frame_time = <200>; /*set software decoder max frame time*/
 	};
+
+	aml_ctrl{
+		compatible = "amlogic, ctrl_mic_prober";
+		dev_name = "aml_ctrl";
+		status = "okay";
+		ctrl_mic-gpios = <&gpio GPIOCLK_0 1>;
+		ctrl_spk-gpios = <&gpio GPIOH_5 1>;
+		interrupts = <0 70 1>,
+				     <0 71 1>,
+					 <0 68 1>,
+					 <0 66 1>;
+			ctrl_mic{
+				compatible = "amlogic, ctrl_mic_prober_i2c";
+				name = "ctrl_mic";
+				i2c_bus = "i2c_bus_b";
+				status = "okay";
+				reg = < 0x20 >;
+			};
+	};
+	
 	meson-irblaster {
 		compatible = "amlogic, am_irblaster";
 		dev_name = "meson-irblaster";
