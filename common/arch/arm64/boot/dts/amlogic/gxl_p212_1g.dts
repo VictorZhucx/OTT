@@ -140,17 +140,17 @@
 
 	};
 
-	/*for external keypad*/
-	adc_keypad{
-		compatible = "amlogic, adc_keypad";
-		status = "okay";
-		key_name = "volume_up","volume_down", "back","call";
-		key_num = <4>;
-		key_code = <115 114 158 61>;
-		key_chan = <0 0 0 0>;
-		key_val = <25 510 681 766>; //val=voltage/1800mV*1023
-		key_tolerance = <25 40 40 25>;
-	};
+     /*for external keypad*/
+     adc_keypad{                                              
+         compatible = "amlogic, adc_keypad";
+         status = "okay";
+         key_name = "volume_up","volume_down", "back","call";
+         key_num = <4>;
+         key_code = <61 114 115 158>;
+         key_chan = <0 0 0 0>;
+         key_val = <25 510 681 766>; //val=voltage/1800mV*1023
+         key_tolerance = <25 25 25 25>;
+     };
 
 	sysled {
 		compatible = "amlogic, sysled";
