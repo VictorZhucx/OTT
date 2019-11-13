@@ -1,0 +1,6 @@
+config AML_CH_MIC
+	boolean "Amlogic CH_MIC drivers"
+	default y
+	---help---
+		say yes if you want add Amlogic change mic support
+

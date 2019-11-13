@@ -36,6 +36,8 @@ obj-$(CONFIG_AML_GMD_13002)		+= gmd_13002/
 
 obj-$(CONFIG_AML_CH_AUDIO)		+= ch_aduio/
 
+obj-$(CONFIG_AML_CH_MIC)		+= ch_mic/
+
 obj-$(CONFIG_AMLOGIC_PWM)		+= pwm/
 
 obj-$(CONFIG_AML_POWER_SUPPORT)	+= power/

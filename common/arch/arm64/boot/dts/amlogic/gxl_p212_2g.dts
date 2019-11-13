@@ -169,6 +169,13 @@
 	    qcom,ch_audio_pin = <&gpio GPIOCLK_0 GPIO_ACTIVE_LOW>;
 	};
 
+    chMic {                                                 
+		compatible = "amlogic, chMic";
+		dev_name = "chMic";
+	    status = "okay";
+	    qcom,ch_mic_pin = <&gpio GPIOCLK_1 GPIO_ACTIVE_LOW>;
+	};
+
 	chunk-reserve {
 		compatible = "amlogic, chunk-reserve";
 		memory-region = <&chunk_reserved>;
