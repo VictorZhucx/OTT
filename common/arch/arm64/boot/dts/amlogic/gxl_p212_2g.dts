@@ -162,6 +162,13 @@
 		led_active_low = <1>;
 	};
 
+    chMic {                                                 
+		compatible = "amlogic, chMic";
+		dev_name = "chMic";
+	    status = "okay";
+	    qcom,ch_mic_pin = <&gpio GPIOCLK_1 GPIO_ACTIVE_LOW>;
+	};
+
 	chunk-reserve {
 		compatible = "amlogic, chunk-reserve";
 		memory-region = <&chunk_reserved>;

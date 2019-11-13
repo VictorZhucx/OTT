@@ -51,6 +51,8 @@ source "drivers/amlogic/gmd_13002/Kconfig"
 
 source "drivers/amlogic/ctrl_mic/Kconfig"
 
+source "drivers/amlogic/ch_mic/Kconfig"
+
 source "drivers/amlogic/canvas/Kconfig"
 
 source "drivers/amlogic/clk/Kconfig"
