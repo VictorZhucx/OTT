@@ -104,27 +104,36 @@ int gmd_i2c_write(uint8_t *writebuf, uint8_t writelen)
     return ret;
 }
 
-static void gmd13002_write(uint8_t chData, uint8_t chCmd)
+static int gmd13002_write(uint8_t chData, uint8_t chCmd)
 {
+    int ret = 0;
 	uint8_t cmd_buf[2] = {0};
 
 	if (chCmd) 
 	{	
 		cmd_buf[0] = 0x40;
 		cmd_buf[1] = chData;
-		gmd_i2c_write(cmd_buf,sizeof(cmd_buf));
+		ret = gmd_i2c_write(cmd_buf,sizeof(cmd_buf));
 	} 
 	else
 	{
 		cmd_buf[0] = 0x00;
 		cmd_buf[1] = chData;
-		gmd_i2c_write(cmd_buf,sizeof(cmd_buf));
+		ret = gmd_i2c_write(cmd_buf,sizeof(cmd_buf));
 	}
+	return ret;
 }
 
-static void gmd13002_conifg(void)
+static int gmd13002_conifg(void)
 {
-	gmd13002_write(0xAE, GMD13002_CMD);//--turn off oled panel
+    int ret = 0;
+	ret = gmd13002_write(0xAE, GMD13002_CMD);//--turn off oled panel
+	if (ret < 0) {
+		ret = gmd13002_write(0xAE, GMD13002_CMD);
+		if (ret < 0) {
+			return ret;
+		}
+	}
 	gmd13002_write(0xd5, GMD13002_CMD);//--set display clock divide ratio/oscillator frequency
 	gmd13002_write(0x80, GMD13002_CMD);//--set divide ratio, Set Clock as 100 Frames/Sec
 	gmd13002_write(0xA8, GMD13002_CMD);//--set multiplex ratio(1 to 64)
@@ -149,6 +158,7 @@ static void gmd13002_conifg(void)
 	gmd13002_write(0x14, GMD13002_CMD);//--set(0x10) disable
 	gmd13002_write(0xAF, GMD13002_CMD);//--turn on oled panel
 	mdelay(100);
+	return 0;
 }
 
 
@@ -290,7 +300,11 @@ void gmd13002_display_string(uint8_t chXpos, uint8_t chYpos, const uint8_t *pchS
 
 static int aml_gmd13002_i2c_init(void)
 {
-	gmd13002_conifg();
+	int ret = 0;
+	ret = gmd13002_conifg();
+	if (ret < 0) {
+		return ret;
+	}
 	gmd13002_clear_screen(0xFF);
 	mdelay(1000);
 	gmd13002_clear_screen(0x00);
@@ -399,7 +413,11 @@ static int aml_gmd13002_i2c_probe(struct i2c_client *client, const struct i2c_de
 	}
 	i2c_set_clientdata(client, NULL);
 	g_aml_gmd13002_client = client;
-	aml_gmd13002_i2c_init();
+	err =  aml_gmd13002_i2c_init();
+	if (err) 
+	{
+		goto exit_sysfs_create_group_err;
+	}
 
 	err = sysfs_create_group(&client->dev.kobj, &gmd_attribute_group);	//sysfs接口创建驱动对应的属性
 	if (err) 
