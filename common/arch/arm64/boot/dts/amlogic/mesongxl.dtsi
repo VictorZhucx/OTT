@@ -706,11 +706,11 @@
 		dev_name = "aml_ctrl";
 		status = "okay";
 		ctrl_mic-gpios = <&gpio GPIOCLK_0 1>;
-		ctrl_spk-gpios = <&gpio GPIOH_5 1>;
+		ctrl_spk-gpios = <&gpio GPIOCLK_1 1>;
 		interrupts = <0 70 1>,
-				     <0 71 1>,
-					 <0 68 1>,
-					 <0 66 1>;
+                             <0 71 1>,
+                             <0 65 1>,
+                             <0 66 1>;
 			ctrl_mic{
 				compatible = "amlogic, ctrl_mic_prober_i2c";
 				name = "ctrl_mic";
