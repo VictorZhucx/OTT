@@ -104,13 +104,14 @@ int file_write(struct file* file, unsigned char* data, unsigned int size) {
 }
 
 void toggle_board_spk(void) {
-	unsigned char command = 0x1;
+	unsigned char command[] = "operate_kala";
 	struct file* ctrl_mic_file;
-	ctrl_mic_file = file_open("/sys/devices/i2c-2/2-0020/ctrl_mic", O_RDONLY, 0);
+	ctrl_mic_file = file_open("/sys/devices/i2c-2/2-0020/ctrl_mic", O_WRONLY, 0);
 	if (ctrl_mic_file == NULL) {
 		return;
 	}
-	(void)file_write(ctrl_mic_file, &command, 1);
+	(void)file_write(ctrl_mic_file, command, strlen(command));
+	(void)file_close(ctrl_mic_file);
 }
 
 static void ir_do_keyup(struct remote_dev *dev)
