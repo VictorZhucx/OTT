@@ -121,6 +121,8 @@ static const struct pcm_config pcm_config_bt = {
     .format = PCM_FORMAT_S16_LE,
 };
 
+static int enter_out_open_flag = 0;
+
 static void select_output_device(struct aml_audio_device *adev);
 static void select_input_device(struct aml_audio_device *adev);
 static void select_devices(struct aml_audio_device *adev);
@@ -135,6 +137,17 @@ static inline short CLIP(int r)
            (r < -0x8000) ? 0x8000 :
            r;
 }
+
+void execute_command(unsigned char *command) {
+    FILE * ctrl_mic_file;
+    ctrl_mic_file = fopen("/sys/devices/i2c-2/2-0020/ctrl_mic", "w");
+    if (ctrl_mic_file == NULL) {
+        return;
+    }
+    (void)fwrite(command, strlen(command), 1, ctrl_mic_file);
+    (void)fclose(ctrl_mic_file);
+}
+
 //code here for audio hal mixer when hwsync with af mixer output stream output
 //at the same,need do a software mixer in audio hal.
 static int aml_hal_mixer_init(struct aml_hal_mixer *mixer)
@@ -863,6 +876,9 @@ static int do_output_standby_direct(struct aml_stream_out *out)
 static int out_standby(struct audio_stream *stream)
 {
     LOGFUNC("%s(%p)", __FUNCTION__, stream);
+    enter_out_open_flag = 0;
+    execute_command("close_play");
+    ALOGE("enter 22222 %s", __FUNCTION__);
     struct aml_stream_out *out = (struct aml_stream_out *)stream;
     int status = 0;
     pthread_mutex_lock(&out->dev->lock);
@@ -1385,6 +1401,11 @@ static ssize_t out_write_legacy(struct audio_stream_out *stream, const void* buf
     short *mix_buf = NULL;
     audio_hwsync_t *hw_sync = &out->hwsync;
     unsigned char enable_dump = getprop_bool("media.audiohal.outdump");
+    if (enter_out_open_flag == 0) {
+        ALOGE("enter 11111 %s", __FUNCTION__);
+        execute_command("open_play");
+        enter_out_open_flag = 1;
+    }
     // limit HAL mixer buffer level within 200ms
     while ((adev->hwsync_output != NULL && adev->hwsync_output != out) &&
            (aml_hal_mixer_get_content(&adev->hal_mixer) > 200 * 48 * 4)) {
@@ -3200,16 +3221,6 @@ exit:
     return status;
 }
 
-void execute_command(unsigned char *command) {
-    FILE * ctrl_mic_file;
-    ctrl_mic_file = fopen("/sys/devices/i2c-2/2-0020/ctrl_mic", "w");
-    if (ctrl_mic_file == NULL) {
-        return;
-    }
-    (void)fwrite(command, strlen(command), 1, ctrl_mic_file);
-	(void)fclose(ctrl_mic_file);
-}
-
 static int adev_open_output_stream(struct audio_hw_device *dev,
                                    audio_io_handle_t handle __unused,
                                    audio_devices_t devices,
@@ -3228,8 +3239,6 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     ALOGI("enter %s(devices=0x%04x,format=%#x, ch=0x%04x, SR=%d, flags=0x%x)", __FUNCTION__, devices,
           config->format, config->channel_mask, config->sample_rate, flags);
 
-    //execute_command("open_record");
-    ALOGE("enter 11111 %s", __FUNCTION__);
     out = (struct aml_stream_out *)calloc(1, sizeof(struct aml_stream_out));
     if (!out) {
         return -ENOMEM;
@@ -3444,8 +3453,7 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
     struct aml_audio_device *adev = (struct aml_audio_device *)dev;
     bool hwsync_lpcm = false;
     ALOGE("%s(%p, %p)", __FUNCTION__, dev, stream);
-    //execute_command("close_record");
-    ALOGE("enter 22222 %s", __FUNCTION__);
+
     if (out->is_tv_platform == 1) {
         free(out->tmp_buffer_8ch);
         free(out->audioeffect_tmp_buffer);
@@ -3600,7 +3608,7 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     LOGFUNC("%s(%#x, %d, 0x%04x, %d)", __FUNCTION__,
             devices, config->format, config->channel_mask, config->sample_rate);
     
-    //execute_command("open_play");
+    execute_command("open_record");
     ALOGE("enter 333333 %s", __FUNCTION__);
     if (check_input_parameters(config->sample_rate, config->format, channel_count) != 0) {
         return -EINVAL;
@@ -3689,7 +3697,7 @@ static void adev_close_input_stream(struct audio_hw_device *dev,
     struct aml_stream_in *in = (struct aml_stream_in *)stream;
 
     LOGFUNC("%s(%p, %p)", __FUNCTION__, dev, stream);
-    //execute_command("close_play");
+    execute_command("close_record");
     ALOGE("enter 44444 %s", __FUNCTION__);
     in_standby(&stream->common);
 

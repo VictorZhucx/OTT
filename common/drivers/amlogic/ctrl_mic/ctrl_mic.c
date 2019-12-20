@@ -421,21 +421,39 @@ static ssize_t ctrl_mic_send_store(struct device *dev,struct device_attribute *a
         process_vol();
     } else if (strncmp(buf, "open_play", 9) == 0) {
         pr_info("open play\n");
-        user_play_flag = true;
-        process_vol();
+        if (user_enable_kala_flag == true) {
+            pr_info("real open play\n");
+            user_play_flag = true;
+            process_vol();
+	    return count;
+       }
     } else if (strncmp(buf, "close_play", 10) == 0) {
         pr_info("close play\n");
-        user_play_flag = false;
-        process_vol();
-	} else if (strncmp(buf, "open_record", 11) == 0) {
-        pr_info("open record\n");
-        user_record_flag = true;
-        process_vol();
-	} else if (strncmp(buf, "close_record", 12) == 0) {
-        pr_info("close record\n");
-        user_record_flag = false;
-        process_vol();
+        if (user_enable_kala_flag == true) {
+            pr_info("real close play\n");
+            user_play_flag = false;
+            process_vol();
+	    return count;
 	}
+    } else if (strncmp(buf, "open_record", 11) == 0) {
+        pr_info("open record\n");
+        if (user_enable_kala_flag == true) {
+            pr_info("real open record\n");
+            user_record_flag = true;
+            process_vol();
+            return count;
+        }
+        pr_info("skip open record\n");
+    } else if (strncmp(buf, "close_record", 12) == 0) {
+        pr_info("close record\n");
+        if (user_enable_kala_flag == true) {
+            pr_info("real close record\n");
+            user_record_flag = false;
+            process_vol();
+            return count;
+        }
+        pr_info("skip close record\n");
+    }
     return count;
 }
 
