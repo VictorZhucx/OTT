@@ -1358,7 +1358,7 @@ static int es8374_probe(struct snd_soc_codec *codec)
 	ret = es8374_i2c_write(0x12,0x30);	//timming set
 	ret = es8374_i2c_write(0x13,0x20);	//timming set
 	ret = es8374_i2c_write(0x21,0x50);	//adc set:	SEL LIN1 CH+PGAGAIN=0DB
-	ret = es8374_i2c_write(0x22,0x36);	//adc set:	PGA GAIN=0DB
+	ret = es8374_i2c_write(0x22,0x06);	//adc set:	PGA GAIN=0DB
 	ret = es8374_i2c_write(0x21,0x24);	//adc set:	SEL LIN1 CH+PGAGAIN=0DB
 	ret = es8374_i2c_write(0x00,0x80);	// IC START
 	msleep(50);  					//DELAY_MS
