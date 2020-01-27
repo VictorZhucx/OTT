@@ -1097,7 +1097,7 @@ static int es8374_pcm_startup(struct snd_pcm_substream *substream,
 		es8374_i2c_read(i);
 	}
 	if(substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-	es8374_i2c_write(0x1E, 0xA0);	
+	//es8374_i2c_write(0x1E, 0xA0);	
 		}
 	return 0;
 }
@@ -1365,11 +1365,11 @@ static int es8374_probe(struct snd_soc_codec *codec)
 	ret = es8374_i2c_write(0x14,0x8A);	// IC START
 	ret = es8374_i2c_write(0x15,0x40);	// IC START
 	ret = es8374_i2c_write(0x1A,0x18);	// monoout set
-	ret = es8374_i2c_write(0x1B,0x19);	// monoout set
+	ret = es8374_i2c_write(0x1B,0x8B);	// monoout set
 	ret = es8374_i2c_write(0x1C,0x90);	// spk set
-	ret = es8374_i2c_write(0x1D,0x02);	// spk set
+	ret = es8374_i2c_write(0x1D,0x10);	// spk set
 	ret = es8374_i2c_write(0x1F,0x00);	// spk set
-	ret = es8374_i2c_write(0x1E,0x40);	// spk on
+	ret = es8374_i2c_write(0x1E,0x00);	// spk on
    	ret = es8374_i2c_write(0x26,0x4D);
 	ret = es8374_i2c_write(0x28,0x00);	// alc set
 	ret = es8374_i2c_write(0x25,0x00);	// ADCVOLUME  on

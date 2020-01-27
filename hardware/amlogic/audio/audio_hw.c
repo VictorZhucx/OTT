@@ -121,8 +121,6 @@ static const struct pcm_config pcm_config_bt = {
     .format = PCM_FORMAT_S16_LE,
 };
 
-static int enter_out_open_flag = 0;
-
 static void select_output_device(struct aml_audio_device *adev);
 static void select_input_device(struct aml_audio_device *adev);
 static void select_devices(struct aml_audio_device *adev);
@@ -876,9 +874,6 @@ static int do_output_standby_direct(struct aml_stream_out *out)
 static int out_standby(struct audio_stream *stream)
 {
     LOGFUNC("%s(%p)", __FUNCTION__, stream);
-    enter_out_open_flag = 0;
-    execute_command("close_play");
-    ALOGE("enter 22222 %s", __FUNCTION__);
     struct aml_stream_out *out = (struct aml_stream_out *)stream;
     int status = 0;
     pthread_mutex_lock(&out->dev->lock);
@@ -1401,11 +1396,7 @@ static ssize_t out_write_legacy(struct audio_stream_out *stream, const void* buf
     short *mix_buf = NULL;
     audio_hwsync_t *hw_sync = &out->hwsync;
     unsigned char enable_dump = getprop_bool("media.audiohal.outdump");
-    if (enter_out_open_flag == 0) {
-        ALOGE("enter 11111 %s", __FUNCTION__);
-        execute_command("open_play");
-        enter_out_open_flag = 1;
-    }
+
     // limit HAL mixer buffer level within 200ms
     while ((adev->hwsync_output != NULL && adev->hwsync_output != out) &&
            (aml_hal_mixer_get_content(&adev->hal_mixer) > 200 * 48 * 4)) {

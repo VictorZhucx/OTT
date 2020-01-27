@@ -36,6 +36,7 @@
 #include <linux/err.h>
 #include <linux/regulator/consumer.h>
 #include <linux/amlogic/aml_gpio_consumer.h> 
+#include <linux/hrtimer.h>
 
 #define AML_I2C_BUS_AO      0
 #define AML_I2C_BUS_A       1
@@ -46,11 +47,14 @@
 int ctrl_mic_pin = 0;
 int ctrl_spk_pin = 0;
 int i2c_init_flag = 0;
-bool earphone_mic = false;
 bool earphone_spk = false;
 bool user_enable_kala_flag = false;
-bool user_play_flag = false;
 bool user_record_flag = false;
+bool first_init_codec = false;
+int trigger_mic_times = 0;
+int trigger_spk_times = 0;
+struct hrtimer sample_timer;
+ktime_t kt;
 #define CTRL_IDEVICE_NAME "ctrl_mic"
 
 struct i2c_client *g_aml_ctrl_mic_client = NULL;
@@ -134,18 +138,10 @@ int ctrl_mic_i2c_write(uint8_t reg, uint8_t val)
 
 static void process_vol(void) 
 {
+    int val = 0;
     // kala ok mode
-    if ( (user_record_flag == false) && (user_play_flag == false) && (user_enable_kala_flag == true))
+    if ( (user_record_flag == false) && (user_enable_kala_flag == true))
     {
-        if (earphone_mic == false)
-        {
-            ctrl_mic_i2c_write(0x21, 0x24);
-        }
-        else
-        {
-            ctrl_mic_i2c_write(0x21, 0x14);
-        }
-
         if (earphone_spk == false)
         {
             ctrl_mic_i2c_write(0x1A, 0xC4);
@@ -158,70 +154,173 @@ static void process_vol(void)
             ctrl_mic_i2c_write(0x1C, 0xD0);
             ctrl_mic_i2c_write(0x1E, 0x40);
         }
+
+        // When enter Kala OK, we should operate the board spk
+        if (ctrl_mic_pin != 0) {
+            /* get gpio value */
+            val = gpio_get_value(ctrl_mic_pin);
+            if (val == 1) {
+                ctrl_mic_i2c_write(0x1D, 0x0A);
+            } else {
+                ctrl_mic_i2c_write(0x1D, 0x09);
+            }
+        }
     }
-    // ip phone mode
-    else
+    // normal mode
+    else if (user_record_flag == false)
     {
-        if (earphone_mic == false)
+        ctrl_mic_i2c_write(0x1E, 0x00);
+        if (earphone_spk == false)
         {
-            ctrl_mic_i2c_write(0x21, 0x24);
+            ctrl_mic_i2c_write(0x1A, 0xC0);
+            ctrl_mic_i2c_write(0x1C, 0x90);
         }
         else
         {
-            ctrl_mic_i2c_write(0x21, 0x14);
+            ctrl_mic_i2c_write(0x1A, 0xE0);
         }
-
+    } 
+    // ip phone mode
+    else if (user_record_flag == true) {
         if (earphone_spk == false)
         {
-            ctrl_mic_i2c_write(0x1A, 0xA0);
+            ctrl_mic_i2c_write(0x1A, 0xC0);
             ctrl_mic_i2c_write(0x1C, 0x90);
             ctrl_mic_i2c_write(0x1E, 0xA0);
         }
         else
         {
-            ctrl_mic_i2c_write(0x1A, 0xA0);
-            ctrl_mic_i2c_write(0x1C, 0x90);
-            ctrl_mic_i2c_write(0x1E, 0x40);
+            ctrl_mic_i2c_write(0x1A, 0xE0);
+            ctrl_mic_i2c_write(0x1E, 0x00);
         }
     }
 }
 
+static enum hrtimer_restart ctrl_mic_timer_handler(struct hrtimer *timer)
+{
+    int val = 0;
+    pr_info("enter ctrl_mic_timer_handler===");
+    if (first_init_codec == false) {
+        first_init_codec = true;
+        if (ctrl_mic_pin != 0) {
+            /* get gpio value */
+            val = gpio_get_value(ctrl_mic_pin);
+            if (val == 1) {
+                pr_info("ctrl mic is high");
+                ctrl_mic_i2c_write(0x21, 0x14);
+            } else {
+                pr_info("ctrl mic is low");
+                ctrl_mic_i2c_write(0x21, 0x24);
+            }
+        }
+        if (ctrl_spk_pin != 0) {
+            /* get gpio value */
+            val = gpio_get_value(ctrl_spk_pin);
+            if (val == 1) {
+                ctrl_mic_i2c_write(0x1A, 0xC0);
+                ctrl_mic_i2c_write(0x1C, 0x90);
+                ctrl_mic_i2c_write(0x1E, 0x00);
+                pr_info("ctrl spk is high\n");
+            } else {
+                ctrl_mic_i2c_write(0x1A, 0xE0);
+                ctrl_mic_i2c_write(0x1E, 0x00);
+                pr_info("ctrl spk is low\n");
+            }
+        }
+    } else {
+        if (trigger_mic_times != 0) {
+            if (ctrl_mic_pin != 0) {
+                /* get gpio value */
+                val = gpio_get_value(ctrl_mic_pin);
+                if (val == 1) {
+                    pr_info("change_mic_headphone\n");
+                    ctrl_mic_i2c_write(0x21, 0x14);
+                    ctrl_mic_i2c_write(0x1D, 0x0a);
+                } else {
+                    pr_info("change_mic_board\n");
+                    ctrl_mic_i2c_write(0x21, 0x24);
+                    ctrl_mic_i2c_write(0x1D, 0x09);
+                }
+
+            }
+            trigger_mic_times = 0;
+        }
+
+        if (trigger_spk_times != 0) {
+            if (ctrl_spk_pin != 0) {
+                /* get gpio value */
+                val = gpio_get_value(ctrl_spk_pin);
+                if (val == 1) {
+                    
+                    pr_info("change_spk_board\n");
+                    earphone_spk = false;
+                    process_vol();
+                } else {
+                    pr_info("change_spk_headphone\n");
+                    earphone_spk = true;
+                    process_vol();
+                }
+            }
+            trigger_spk_times = 0;
+        }
+    }
+    return HRTIMER_NORESTART; 
+}
+
 static irqreturn_t change_mic_board(int irq, void *dev_id)
 {
-    pr_info("change_mic_board\n");
-    earphone_mic = false;
-    process_vol();
+    kt = ktime_set(0, 500000000); /* 0 sec, 500000000 nsec */
+    if (first_init_codec == true) {
+        //pr_info("change_mic_board\n");
+        //ctrl_mic_i2c_write(0x21, 0x24);
+        trigger_mic_times++;
+        hrtimer_cancel(&sample_timer);
+        hrtimer_start(&sample_timer, kt, HRTIMER_MODE_REL);
+    }
+
     return IRQ_HANDLED;
 }
 
 static irqreturn_t change_mic_headphone(int irq, void *dev_id)
 {
-    pr_info("change_mic_headphone\n");
-    earphone_mic = true;
-    process_vol();
+    kt = ktime_set(0, 500000000); /* 0 sec, 500000000 nsec */
+    if (first_init_codec == true) {
+        //pr_info("change_mic_headphone\n");
+        //ctrl_mic_i2c_write(0x21, 0x14);
+        trigger_mic_times++;
+        hrtimer_cancel(&sample_timer);
+        hrtimer_start(&sample_timer, kt, HRTIMER_MODE_REL);
+    }
     return IRQ_HANDLED;
 }
 
 static irqreturn_t change_spk_board(int irq, void *dev_id)
 {
-    pr_info("change_spk_board\n");
-    earphone_spk = false;
-    process_vol();
+    kt = ktime_set(0, 500000000);
+    if (first_init_codec == true) {
+        pr_info("change_spk_board======\n");
+        trigger_spk_times++;
+        hrtimer_cancel(&sample_timer);
+        hrtimer_start(&sample_timer, kt, HRTIMER_MODE_REL);
+    }
     return IRQ_HANDLED;
 }
 
 static irqreturn_t change_spk_headphone(int irq, void *dev_id)
 {
-    pr_info("change_spk_headphone\n");
-    earphone_spk = true;
-    process_vol();
+    kt = ktime_set(0, 500000000);
+    if (first_init_codec == true) {
+        pr_info("change_spk_headphone======\n");
+        trigger_spk_times++;
+        hrtimer_cancel(&sample_timer);
+        hrtimer_start(&sample_timer, kt, HRTIMER_MODE_REL);
+    }
     return IRQ_HANDLED;
 }
 
 static int aml_ctrl_mic_i2c_init(struct platform_device *pdev)
 {
     int ret;
-    int val;
     struct gpioriq_demo_pdata *pdata = platform_get_drvdata(pdev);
 
     pdata->mic_gpio = devm_gpiod_get(&pdev->dev, "ctrl_mic");
@@ -245,32 +344,23 @@ static int aml_ctrl_mic_i2c_init(struct platform_device *pdev)
        return ret;
     }
     
-    ret = gpiod_for_irq(pdata->mic_gpio, AML_GPIO_IRQ((pdata->mic_irq_in - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_FALLING));
-    ret = gpiod_for_irq(pdata->mic_gpio, AML_GPIO_IRQ((pdata->mic_irq_out - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_RISING));
+    ret = gpiod_for_irq(pdata->mic_gpio, AML_GPIO_IRQ((pdata->mic_irq_in - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_RISING));
+    ret = gpiod_for_irq(pdata->mic_gpio, AML_GPIO_IRQ((pdata->mic_irq_out - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_FALLING));
     if(ret) {
         printk(KERN_ERR "fail to request test errno:%d\n", ret);
         return ret;
     }
 
-    ret = devm_request_irq(&pdev->dev, pdata->mic_irq_in, change_mic_headphone, IRQF_DISABLED, "ctrl_mic_headphone", pdata);
+    ret = devm_request_irq(&pdev->dev, pdata->mic_irq_in, change_mic_board, IRQF_DISABLED, "ctrl_mic_headphone", pdata);
     if(ret) {
         printk(KERN_ERR "fail to register test errno:%d\n", ret);
         return ret;
     }
 
-    ret = devm_request_irq(&pdev->dev, pdata->mic_irq_out, change_mic_board, IRQF_DISABLED, "ctrl_mic_board", pdata);
+    ret = devm_request_irq(&pdev->dev, pdata->mic_irq_out, change_mic_headphone, IRQF_DISABLED, "ctrl_mic_board", pdata);
     if(ret) {
         printk(KERN_ERR "fail to register test errno:%d\n", ret);
         return ret;
-    }
-    /* get gpio value */
-    val = gpio_get_value(ctrl_mic_pin);
-    if (val == 1) {
-        earphone_mic = false;
-        pr_info("ctrl mic is high");
-    } else {
-        earphone_mic = true;
-        pr_info("ctrl mic is low");
     }
     return 0;
 }
@@ -278,7 +368,6 @@ static int aml_ctrl_mic_i2c_init(struct platform_device *pdev)
 static int aml_ctrl_spk_i2c_init(struct platform_device *pdev)
 {
     int ret;
-    int val;
     struct gpioriq_demo_pdata *pdata = platform_get_drvdata(pdev);
 
     pdata->spk_gpio = devm_gpiod_get(&pdev->dev, "ctrl_spk");
@@ -302,32 +391,23 @@ static int aml_ctrl_spk_i2c_init(struct platform_device *pdev)
        return ret;
     }
     
-    ret = gpiod_for_irq(pdata->spk_gpio, AML_GPIO_IRQ((pdata->spk_irq_in - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_FALLING));
-    ret = gpiod_for_irq(pdata->spk_gpio, AML_GPIO_IRQ((pdata->spk_irq_out - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_RISING));
+    ret = gpiod_for_irq(pdata->spk_gpio, AML_GPIO_IRQ((pdata->spk_irq_in - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_RISING));
+    ret = gpiod_for_irq(pdata->spk_gpio, AML_GPIO_IRQ((pdata->spk_irq_out - INT_GPIO_0), FILTER_NUM7, GPIO_IRQ_FALLING));
     if(ret) {
       printk(KERN_ERR "fail to request test errno:%d\n", ret);
       return ret;
     }
 
-    ret = devm_request_irq(&pdev->dev, pdata->spk_irq_in, change_spk_headphone, IRQF_DISABLED, "ctrl_spk_headphone", pdata);
+    ret = devm_request_irq(&pdev->dev, pdata->spk_irq_in, change_spk_board, IRQF_DISABLED, "ctrl_spk_headphone", pdata);
     if(ret) {
       printk(KERN_ERR "fail to register test errno:%d\n", ret);
       return ret;
     }
 
-    ret = devm_request_irq(&pdev->dev, pdata->spk_irq_out, change_spk_board, IRQF_DISABLED, "ctrl_spk_board", pdata);
+    ret = devm_request_irq(&pdev->dev, pdata->spk_irq_out, change_spk_headphone, IRQF_DISABLED, "ctrl_spk_board", pdata);
     if(ret) {
       printk(KERN_ERR "fail to register test errno:%d\n", ret);
       return ret;
-    }
-    /* get gpio value */
-    val = gpio_get_value(ctrl_spk_pin);
-    if (val == 1) {
-      pr_info("ctrl spk is high");
-      earphone_spk = false;
-    } else {
-      earphone_spk = true;
-      pr_info("ctrl spk is low");
     }
     return 0;
 }
@@ -385,17 +465,7 @@ static ssize_t ctrl_mic_send_store(struct device *dev,struct device_attribute *a
        for (i = 0; i <= 0x4f; i++) { 
            ctrl_mic_i2c_read(i);
        }
-    } else if (strncmp(buf, "c", 1) == 0) {
-        if (strlen(buf) >= 9) {
-            strncpy(acReg, &buf[1], 4);
-            strncpy(acVal, &buf[5], 4);
-        }
-        reg = strToInt(acReg[2]) * 16 + strToInt(acReg[3]);
-        val = strToInt(acVal[2]) * 16 + strToInt(acVal[3]);
-        pr_info("reg is 0x%x, val is 0x%x\n", reg, val);
-       ctrl_mic_i2c_write(reg, val);
-       ctrl_mic_i2c_read(reg);
-    } else if (strncmp(buf, "5", 1) == 0) {
+    }  else if (strncmp(buf, "5", 1) == 0) {
        pr_info("open sing and hear(right up)\n");
        ctrl_mic_i2c_write(0x21, 0x14);
        ctrl_mic_i2c_write(0x1A, 0xC4);
@@ -419,40 +489,30 @@ static ssize_t ctrl_mic_send_store(struct device *dev,struct device_attribute *a
         pr_info("operate kala ok\n");
         user_enable_kala_flag = !user_enable_kala_flag;
         process_vol();
-    } else if (strncmp(buf, "open_play", 9) == 0) {
-        pr_info("open play\n");
-        if (user_enable_kala_flag == true) {
-            pr_info("real open play\n");
-            user_play_flag = true;
-            process_vol();
-	    return count;
-       }
-    } else if (strncmp(buf, "close_play", 10) == 0) {
-        pr_info("close play\n");
-        if (user_enable_kala_flag == true) {
-            pr_info("real close play\n");
-            user_play_flag = false;
-            process_vol();
-	    return count;
-	}
     } else if (strncmp(buf, "open_record", 11) == 0) {
         pr_info("open record\n");
         if (user_enable_kala_flag == true) {
             pr_info("real open record\n");
             user_record_flag = true;
-            process_vol();
-            return count;
         }
-        pr_info("skip open record\n");
+        process_vol();
     } else if (strncmp(buf, "close_record", 12) == 0) {
         pr_info("close record\n");
         if (user_enable_kala_flag == true) {
             pr_info("real close record\n");
             user_record_flag = false;
-            process_vol();
-            return count;
         }
-        pr_info("skip close record\n");
+        process_vol();
+    } else if (strncmp(buf, "c", 1) == 0) {
+        if (strlen(buf) >= 9) {
+            strncpy(acReg, &buf[1], 4);
+            strncpy(acVal, &buf[5], 4);
+        }
+        reg = strToInt(acReg[2]) * 16 + strToInt(acReg[3]);
+        val = strToInt(acVal[2]) * 16 + strToInt(acVal[3]);
+        pr_info("reg is 0x%x, val is 0x%x\n", reg, val);
+       ctrl_mic_i2c_write(reg, val);
+       ctrl_mic_i2c_read(reg);
     }
     return count;
 }
@@ -476,7 +536,6 @@ static struct attribute_group ctrl_attribute_group = {
 static int aml_ctrl_mic_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     int err;
-    int val;
     cmic = kzalloc(sizeof(struct aml_ctrl_mic_data),GFP_KERNEL);
     if (!cmic) 
     {   
@@ -504,28 +563,17 @@ static int aml_ctrl_mic_i2c_probe(struct i2c_client *client, const struct i2c_de
 
     printk(KERN_ERR "%s successfully  probe >>>>>>>>>\n", __func__);
     i2c_init_flag = 1;
-    if (ctrl_mic_pin != 0) {
-        /* get gpio value */
-        val = gpio_get_value(ctrl_mic_pin);
-        if (val == 1) {
-        	earphone_mic = false;
-            pr_info("ctrl mic is high");
-        } else {
-        	earphone_mic = true;
-            pr_info("ctrl mic is low");
-        }
-    }
-    if (ctrl_spk_pin != 0) {
-        /* get gpio value */
-        val = gpio_get_value(ctrl_spk_pin);
-        if (val == 1) {
-        	earphone_spk = false;
-            pr_info("ctrl spk is high");
-        } else {
-        	earphone_spk = true;
-            pr_info("ctrl spk is low");
-        }
-    }
+
+    kt = ktime_set(7, 0); /* 0 sec, 1000000 nsec */
+    hrtimer_init(&sample_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    sample_timer.function = ctrl_mic_timer_handler;
+    hrtimer_start(&sample_timer, kt, HRTIMER_MODE_REL);
+
+    ctrl_mic_i2c_write(0x21, 0x24);
+    ctrl_mic_i2c_write(0x1A, 0xC0);
+    ctrl_mic_i2c_write(0x1C, 0x90);
+    ctrl_mic_i2c_write(0x1E, 0x00);
+
     return 0;
 }
 
